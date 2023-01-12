@@ -1,0 +1,31 @@
+#!/bin/bash
+
+HOME=/home/ec2-user
+
+GITHUB_USER=JFenstermacher
+GITHUB_REPO=gha-self-hosted-runner-test
+
+# Install JQ
+echo "Updating and installing deps"
+yum update -y
+yum install jq
+
+# Get registration token
+echo "Retreiving token"
+TOKEN=$( curl -X POST "https://api.github.com/repos/$GITHUB_USER/$GITHUB_REPO/actions/runners/registration-token" -H "Authorization: token ${pat}" | jq -r '.token' )
+
+echo "Token: $TOKEN"
+
+# Install GitHub Actions Runner
+echo "Installing Actions Runner"
+ACTIONS_RUNNER_DIR=$HOME/actions-runner
+
+mkdir -p $ACTIONS_RUNNER_DIR
+curl -O -L https://github.com/actions/runner/releases/download/v2.300.2/actions-runner-linux-x64-2.300.2.tar.gz
+tar xzf ~/actions-runner/actions-runner-linux-x64-2.300.2.tar.gz
+rm ~/actions-runner/actions-runner-linux-x64-2.300.2.tar.gz
+
+# Config and Run
+echo "Configuring and running actions runner"
+./config.sh --url https://github.com/$GITHUB_USER/$GITHUB_REPO --token "$TOKEN" --name "Github EC2 Runner" --unattended
+./run.sh
